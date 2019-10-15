@@ -9,9 +9,10 @@ import math
 import scipy.stats as st
 
 import tensorflow.examples.tutorials.mnist.input_data as input_data
+from sklearn.decomposition import PCA
 
-K = 2
-dim = 2
+K = 3
+dim = 78
 
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 mean_img = np.mean(mnist.train.images, axis=0)
@@ -29,21 +30,23 @@ x_test_data = test_data[0]
 x_test_data_norm = np.array([img - mean_img for img in x_test_data])
 y_test_data = test_data[1]
 
+x_train_data_norm = x_train_data_norm[:10000,:]
+
 
 X1 = np.random.multivariate_normal([2]*dim, np.diag([0.5]*dim), size=20)
 X2 = np.random.multivariate_normal([5]*dim, np.diag([0.5]*dim), size=20)
 X3 = np.random.multivariate_normal([8]*dim, np.diag([0.5]*dim), size=20)
-# X4 = np.random.multivariate_normal([-3]*dim, np.diag([0.5]*dim), size=20)
-# X5 = np.random.multivariate_normal([45]*dim, np.diag([0.5]*dim), size=20)
-# X6 = np.random.multivariate_normal([-55]*dim, np.diag([0.5]*dim), size=20)
-# X7 = np.random.multivariate_normal([-65]*dim, np.diag([0.5]*dim), size=20)
-# X8 = np.random.multivariate_normal([-75]*dim, np.diag([0.5]*dim), size=20)
-# X9 = np.random.multivariate_normal([-85]*dim, np.diag([0.5]*dim), size=20)
-# X10 = np.random.multivariate_normal([-95]*dim, np.diag([0.5]*dim), size=20)
+X4 = np.random.multivariate_normal([-3]*dim, np.diag([0.5]*dim), size=20)
+X5 = np.random.multivariate_normal([11]*dim, np.diag([0.5]*dim), size=20)
+X6 = np.random.multivariate_normal([-6]*dim, np.diag([0.5]*dim), size=20)
+X7 = np.random.multivariate_normal([-11]*dim, np.diag([0.5]*dim), size=20)
+X8 = np.random.multivariate_normal([-2]*dim, np.diag([0.5]*dim), size=20)
+X9 = np.random.multivariate_normal([15]*dim, np.diag([0.5]*dim), size=20)
+X10 = np.random.multivariate_normal([-15]*dim, np.diag([0.5]*dim), size=20)
 
 X = np.vstack([X1, X2])
-# X = np.vstack([X1, X2, X3, X4, X5, X6, X7, X8, X9, X10])
-# X = np.vstack([X1, X2, X3])
+X = np.vstack([X1, X2, X3, X4, X5, X6, X7, X8, X9, X10])
+X = np.vstack([X1, X2, X3])
 
 x_train_data_norm = X
 
@@ -51,7 +54,10 @@ x_train_data_norm = X
 # import sys
 # sys.exit()
 
-N = X.shape[0]
+N = x_train_data_norm.shape[0]
+
+# pca = PCA(n_components=196)
+# x_train_data_norm = pca.fit_transform(x_train_data_norm)
 
 
 # mu_var_dict = {}
@@ -61,20 +67,21 @@ N = X.shape[0]
 #     pickle.dump(mu_var_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-c=1
+c=0.1
 alpha = np.array([1]*K)
 mus = []
-m0 = [np.array([0.1]*dim)]*K
+m0 = [np.array([1]*dim)]*K
 for k in range(K):
 	sample = np.random.multivariate_normal(np.mean(x_train_data_norm,axis=0), c*np.identity(dim))
+	sample = np.random.multivariate_normal(np.zeros((dim)), c*np.identity(dim))
 	# sample = np.random.multivariate_normal(np.zeros(dim), c*np.identity(dim))
 	# print(sample.shape)
 	# import sys
 	# sys.exit()
 	mus.append(sample)
 	# m0.append(sample)
-mus = np.array([[1, 1], [15, 15]], dtype='float')
-m0 = np.array([[1, 1], [1, 1]], dtype='float')
+# mus = np.array([[1, 1], [15, 15], [35,35]], dtype='float')
+# m0 = np.array([[1, 1], [1, 1]], dtype='float')
 # sigmas = [np.cov(x_train_data_norm, rowvar=False)]*K
 # sigmas = [np.identity(dim)]*10
 # mus = np.array([[1, 1], [15, 15]], dtype='float')
@@ -94,14 +101,18 @@ for itr in range(50):
         # p = math.log(theta[k]) - (dim/2.0)*math.log(2*math.pi)- 0.5*math.log(np.linalg.det(sigmas[k]))
         # - 0.5*np.matmul(np.matmul((x_train_data_norm - mus[k]), np.linalg.inv(sigmas[k])), (x_train_data_norm - mus[k]).T)
         # p1 = theta[k] * st.multivariate_normal.pdf(x_train_data_norm, mean=mus[k], cov=sigmas[k])
-        p = math.log(theta[k]) - (dim/2.0)*math.log(2*math.pi)- 0.5*math.log(np.linalg.det(sigmas[k]))\
-            - 0.5*np.sum(np.multiply(np.matmul((x_train_data_norm - mus[k]), np.linalg.inv(sigmas[k])), (x_train_data_norm - mus[k])), axis=1)
-        p = np.exp(p)
         # import pdb
         # pdb.set_trace()
+        p = math.log(theta[k]) \
+            - 0.5*np.sum(np.multiply(np.matmul((x_train_data_norm - mus[k]), np.linalg.inv(sigmas[k])), (x_train_data_norm - mus[k])), axis=1)
+        p = np.exp(p)
+    	# import pdb
+    	# pdb.set_trace()
         probs[:, k] = p
 
     # Normalize
+    # import pdb
+    # pdb.set_trace()
     probs /= np.sum(probs, axis=1)[:, np.newaxis]
     # import pdb
     # pdb.set_trace()
@@ -139,8 +150,10 @@ for itr in range(50):
     # pdb.set_trace()
 
 
+    # for k in range(K):
+    # 	print('{} data in cluster-{}, mean: {}'.format(Ns[k], k, mus[k]))
     for k in range(K):
-    	print('{} data in cluster-{}, mean: {}'.format(Ns[k], k, mus[k]))
+    	print('{} data in cluster-{}'.format(Ns[k], k))
 
 
 
