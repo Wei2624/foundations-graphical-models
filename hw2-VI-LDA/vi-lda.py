@@ -80,16 +80,19 @@ for itr in range(iterations):
 		theta_digamma = digamma(gammas[i,:]) - digamma(np.sum(gammas[i,:]))
 		print('document for phis: ',i,'obj:', obj[itr-1])
 		for key, val in in_samples_word_index_dict[i].iteritems():
-			for k in range(total_topics):
-				beta_digamma = digamma(lambdas[k,int(key)]) - digamma(np.sum(lambdas[k,:]))
-				if exp(beta_digamma + theta_digamma[k]) == 0:
-					import pdb
-					pdb.set_trace()
-				phis[i][j:j+val,k] = exp(beta_digamma + theta_digamma[k])
+			beta_digamma = digamma(lambdas[:,int(key)]) - digamma(np.sum(lambdas[:,:], axis=1))
+			phis[i][j:j+val,:] = np.exp(beta_digamma + theta_digamma)
+			# for k in range(total_topics):
+			# 	beta_digamma = digamma(lambdas[k,int(key)]) - digamma(np.sum(lambdas[k,:]))
+			# 	if exp(beta_digamma + theta_digamma[k]) == 0:
+			# 		import pdb
+			# 		pdb.set_trace()
+			# 	phis[i][j:j+val,k] = exp(beta_digamma + theta_digamma[k])
 			j += val
 			# if accumulate_idx >= word_count:
 			# 	import pdb
 			# 	pdb.set_trace()
+		assert j == word_count
 		phis[i][:,:] /= np.sum(phis[i][:,:], axis=1)[:, np.newaxis]
 
 		for k in range(total_topics):
@@ -103,14 +106,14 @@ for itr in range(iterations):
 	# 		topic = np.random.multinomial(n=1, pvals=phis[i][j,:]).argmax()
 	# 		z[i][j] = topic
 
-	print('---------------------update gammas-------------------------')
-	for i,word_count in enumerate(in_samples_word_count):
-		print('document for gammas:',i)
-		for k in range(total_topics):
-			probs = 0
-			for j in range(word_count):
-				probs +=  phis[i][j,k]
-			gammas[i,k] = alpha[k] + probs
+	# print('---------------------update gammas-------------------------')
+	# for i,word_count in enumerate(in_samples_word_count):
+	# 	print('document for gammas:',i)
+	# 	for k in range(total_topics):
+	# 		probs = 0
+	# 		for j in range(word_count):
+	# 			probs +=  phis[i][j,k]
+	# 		gammas[i,k] = alpha[k] + probs
 
 	# print('-----------------------update lambdas-----------------------')
 	# for k in range(total_topics):
@@ -136,6 +139,7 @@ for itr in range(iterations):
 			for l in range(val):
 		 		updates_lambdas[:,int(key)] += np.transpose(phis[i][j+l,:])
 		 	j += val
+		assert j == word_count
 	lambdas = ita + updates_lambdas
 
 
@@ -147,12 +151,19 @@ for itr in range(iterations):
 		print('calcilate ELBO:',i)
 		j = 0
 		for key, val in in_samples_word_index_dict[i].iteritems():
+			digamma_vec_over_k = digamma(gammas[i,:]) - digamma(np.sum(gammas[i,:])) \
+						+ digamma(lambdas[:,int(key)]) - digamma(np.sum(lambdas[:,:], axis=1)) 
 			for l in range(val):
-				for k in range(total_topics):
-					log_joint += phis[i][j + l,k]*(digamma(gammas[i,k]) - digamma(np.sum(gammas[i,:])) \
-						+ digamma(lambdas[k,int(key)]) - digamma(np.sum(lambdas[k,:])))
-					third_entropy -= phis[i][j + l,k]*log(phis[i][j + l,k])
+				sub_sum = np.multiply(phis[i][j + l,:],digamma_vec_over_k)
+				log_joint = log_joint + np.sum(sub_sum)
+				third_entropy = third_entropy - np.sum(np.multiply(phis[i][j + l,:],np.log(phis[i][j + l,:])))
+				# for k in range(total_topics):
+				# 	log_joint += phis[i][j + l,k]*(digamma(gammas[i,k]) - digamma(np.sum(gammas[i,:])) \
+				# 		+ digamma(lambdas[k,int(key)]) - digamma(np.sum(lambdas[k,:])))
+				# 	third_entropy -= phis[i][j + l,k]*log(phis[i][j + l,k])
 		 	j += val
+
+		 assert j == word_count
 
 		sub_sum = loggamma(gammas[i,:]) - np.multiply((gammas[i,:] - 1),digamma(gammas[i,:]) - digamma(np.sum(gammas[i,:])))
 		first_entropy = first_entropy - loggamma(np.sum(gammas[i,:])) + np.sum(sub_sum)
