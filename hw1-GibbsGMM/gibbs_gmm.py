@@ -80,7 +80,7 @@ for k in range(K):
 	# sys.exit()
 	mus.append(sample)
 	# m0.append(sample)
-# mus = np.array([[1, 1], [15, 15], [35,35]], dtype='float')
+mus = np.array([[1, 1], [15, 15], [35,35]], dtype='float')
 # m0 = np.array([[1, 1], [1, 1]], dtype='float')
 # sigmas = [np.cov(x_train_data_norm, rowvar=False)]*K
 # sigmas = [np.identity(dim)]*10
