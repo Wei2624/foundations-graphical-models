@@ -78,7 +78,7 @@ for itr in range(iterations):
 	for i,word_count in enumerate(in_samples_word_count):
 		j = 0
 		theta_digamma = digamma(gammas[i,:]) - digamma(np.sum(gammas[i,:]))
-		print('document for phis: ',i)
+		print('document for phis: ',i,'obj:', obj[itr-1])
 		for key, val in in_samples_word_index_dict[i].iteritems():
 			for k in range(total_topics):
 				beta_digamma = digamma(lambdas[k,int(key)]) - digamma(np.sum(lambdas[k,:]))
@@ -162,6 +162,7 @@ for itr in range(iterations):
 
 
 	obj[itr] = log_joint + first_entropy + second_entropy + third_entropy
+
 
 
 
