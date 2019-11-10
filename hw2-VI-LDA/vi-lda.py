@@ -92,6 +92,12 @@ for itr in range(iterations):
 			# 	pdb.set_trace()
 		phis[i][:,:] /= np.sum(phis[i][:,:], axis=1)[:, np.newaxis]
 
+		for k in range(total_topics):
+			probs = 0
+			for j in range(word_count):
+				probs +=  phis[i][j,k]
+			gammas[i,k] = alpha[k] + probs
+
 	# for i,word_count in enumerate(in_samples_word_count):
 	# 	for j in range(word_count):
 	# 		topic = np.random.multinomial(n=1, pvals=phis[i][j,:]).argmax()
